@@ -1,0 +1,33 @@
+name: URF LoL Notifier
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install
+
+      - run: npm start
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
+
+      - name: Commit state
+        run: |
+          git config user.name "urf-lol-notifier"
+          git config user.email "bot@users.noreply.github.com"
+          git add state.json
+          git commit -m "Update last processed patch" || echo "No changes"
+          git push
