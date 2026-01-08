@@ -2,8 +2,15 @@ name: URF LoL Notifier
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: urf-lol-notifier
+  cancel-in-progress: true
 
 jobs:
   run-bot:
@@ -11,12 +18,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
-      - run: npm install
+      - run: npm ci
 
       - run: npm start
         env:
@@ -29,5 +39,7 @@ jobs:
           git config user.name "urf-lol-notifier"
           git config user.email "bot@users.noreply.github.com"
           git add state.json
-          git commit -m "Update last processed patch" || echo "No changes"
+          git diff --staged --quiet && echo "No changes" && exit 0
+          git commit -m "Update last processed patch"
+          git pull --rebase origin main
           git push
