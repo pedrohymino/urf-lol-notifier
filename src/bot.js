@@ -243,11 +243,18 @@ function extractMentions($patch, keywords) {
   };
 }
 
-async function sendDiscord(found, url) {
+async function sendDiscord(found, url, mentions) {
+  const snippets = (mentions?.snippets || []).slice(0, 3);
+
+  const lines = snippets.length
+    ? snippets.map((s) => `• ${s}`).join('\n')
+    : '• Keywords found, but no snippet extracted.';
+
   const content =
     `🚨 **URF PATCH ALERT** 🚨\n\n` +
-    `Keywords found: **${found.join(', ')}**\n` +
-    `${url}`;
+    `Keywords: **${found.join(', ')}**\n` +
+    `${url}\n\n` +
+    `Mentions:\n${lines}`;
 
   await fetch(DISCORD_WEBHOOK_URL, {
     method: 'POST',
