@@ -9,7 +9,7 @@ const PATCH_LIST_URL =
   'https://www.leagueoflegends.com/en-us/news/tags/patch-notes/';
 
 const KEYWORDS = JSON.parse(
-  fs.readFileSync('keywords.json', 'utf-8')
+  fs.readFileSync('keywords.json', 'utf-8'),
 ).keywords.map((k) => k.toLowerCase());
 
 const STATE_PATH = 'state.json';
@@ -20,7 +20,11 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
 async function run() {
-  console.log('Checking latest LoL patch notes...');
+  console.log(
+    `%c 🔎 Checking latest LoL patch notes...`,
+    'background:#5856d650; color: white;border-radius: 50px; padding: 5px 10px;',
+    KEYWORDS,
+  ); //purple
 
   const listHtml = await fetch(PATCH_LIST_URL).then((r) => r.text());
   const $list = cheerio.load(listHtml);
@@ -29,25 +33,43 @@ async function run() {
 
   $list('a[href]').each((_, el) => {
     const href = $list(el).attr('href');
-
-    if (href && href.includes('/news/game-updates/patch-')) {
+    if (
+      href &&
+      (href.includes('/news/game-updates/patch-') ||
+        href.includes('/news/game-updates/league-of-legends-patch-'))
+    ) {
       patchUrl = 'https://www.leagueoflegends.com' + href;
+      console.log(
+        `%c 🆕 latest patch url`,
+        'background:#e5e5ea50; color: white;border-radius: 50px; padding: 5px 10px;',
+        patchUrl,
+      ); //gray
       return false;
     }
   });
 
   if (!patchUrl) {
+    console.log(
+      `%c ❌ Could not find latest patch link`,
+      'background:#ff2d5550; color: white;border-radius: 50px; padding: 5px 10px;',
+    ); //red
     throw new Error('Could not find latest patch link');
   }
 
   const state = JSON.parse(fs.readFileSync(STATE_PATH, 'utf-8'));
 
   if (state.lastPatchUrl === patchUrl) {
-    console.log('No new patch detected.');
+    console.log(
+      `%c 🙅 No new patch detected.`,
+      'background:#e5e5ea50; color: white;border-radius: 50px; padding: 5px 10px;',
+    ); //gray
     return;
   }
 
-  console.log('New patch detected:', patchUrl);
+  console.log(
+    `%c ✨✨✨ New patch detected`,
+    'background:#34c75950; color: white;border-radius: 50px; padding: 5px 10px;',
+  ); //green
 
   const patchHtml = await fetch(patchUrl).then((r) => r.text());
   const $patch = cheerio.load(patchHtml);
@@ -61,7 +83,10 @@ async function run() {
     await sendEmail(found, patchUrl, mentions);
     await sendDiscord(found, patchUrl, mentions);
   } else {
-    console.log('Patch found, but no keywords matched.');
+    console.log(
+      `%c 😭 Patch found, but no keywords matched`,
+      'background:#64d2ff50; color: white;border-radius: 50px; padding: 5px 10px;',
+    ); //cyan
   }
 
   state.lastPatchUrl = patchUrl;
@@ -81,7 +106,7 @@ async function sendEmail(found, url, matches) {
             <li style="margin: 0 0 10px 0; line-height: 1.5;">
               ${escapeHtml(s)}
             </li>
-          `
+          `,
         )
         .join('')
     : `<li style="margin: 0; line-height: 1.5;">Keywords found, but no specific snippet could be extracted.</li>`;
@@ -104,8 +129,8 @@ async function sendEmail(found, url, matches) {
             .map(
               (k) =>
                 `<span style="display:inline-block; padding: 6px 10px; margin: 4px 6px 0 0; border-radius: 999px; background:#ffffff; border:1px solid #c7d2fe;">${escapeHtml(
-                  k
-                )}</span>`
+                  k,
+                )}</span>`,
             )
             .join('')}
         </div>
@@ -114,7 +139,7 @@ async function sendEmail(found, url, matches) {
       <div style="margin-top: 18px;">
         <div style="font-size: 16px; font-weight: 700; color:#111827;">Patch</div>
         <div style="margin-top: 6px; color:#374151;">${escapeHtml(
-          patchTitle
+          patchTitle,
         )}</div>
         <div style="margin-top: 10px;">
           <a href="${url}" style="display:inline-block; padding: 10px 14px; border-radius: 10px; background:#111827; color:#ffffff; text-decoration:none; font-weight:700;">
@@ -191,7 +216,7 @@ function extractMentions($patch, keywords) {
 
   // Pegamos bem mais tipos de elementos
   const candidates = $patch(
-    'p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, div, span'
+    'p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, div, span',
   );
 
   for (const kw of keywords) {
